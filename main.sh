@@ -9,19 +9,23 @@ BOLD_MAGENTA='\033[1;35m' # Bold Magenta
 
 # Function to display script usage
 usage() {
-    echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} Usage: $0 -a <ip_address> [-s <min_rate>]" >&2
+    echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} Usage: $0 -a <ip_address> [-s <min_rate>] [-A]" >&2
     exit 1
 }
 
 # Check if there are at least 2 arguments
 if [ $# -lt 2 ]; then
     usage
-elif [ $# -gt 4 ]; then
+elif [ $# -gt 6 ]; then
     usage
 fi
 
+# Set Default Values
+min_rate=500
+T_option=3
+
 # Parse command line arguments
-while getopts ":a:s:" opt; do
+while getopts ":a:s:AT12345" opt; do
     case $opt in
         a)
             ip_address=$OPTARG
@@ -29,21 +33,39 @@ while getopts ":a:s:" opt; do
         s)
             min_rate=$OPTARG
             ;;
+        A)
+            A_option=true
+            ;;
+        T)
+            T_option=3
+            ;;
+        1)
+            T_option=1
+            ;;
+        2)
+            T_option=2
+            ;;
+        3)
+            T_option=3
+            ;;
+        4)
+            T_option=4
+            ;;
+        5)
+            T_option=5
+            ;;
         \?)
             echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_RED}Warning${RESET}${BOLD_MAGENTA}>${RESET} Invalid option: -$OPTARG" >&2
             usage
             ;;
         :)
-            echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_RED}Warning${RESET}${BOLD_MAGENTA}>${RESET} Option -$OPTARG requires an argument." >&2
-            usage
+            if [ "$OPTARG" = "a" ] || [ "$OPTARG" = "s" ]; then
+                echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_RED}Warning${RESET}${BOLD_MAGENTA}>${RESET} Option -$OPTARG requires an argument." >&2
+                usage
+            fi
             ;;
     esac
 done
-
-# If -s option is not provided, use default min_rate value
-if [ -z "$min_rate" ]; then
-    min_rate=500
-fi
 
 #Quality
 echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} Probing Ports"
@@ -60,7 +82,7 @@ while read -r line; do
             echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} Open port: $port"
         fi
     fi
-done < <(sudo nmap -p- -T4 -v --min-rate "$min_rate" "$ip_address")
+done < <(sudo nmap -p- -T"$T_option" -v --min-rate "$min_rate" "$ip_address")
 
 # Construct a comma-separated list of open ports
 open_ports_list=$(IFS=,; echo "${open_ports[*]}")
@@ -101,4 +123,4 @@ while read -r line; do
         fi
     fi
 
-done < <(sudo nmap -p"$open_ports_list" -sS -sV -sC -T4 -v --min-rate 500 --traceroute "$ip_address" 2>/dev/null)
+done < <(sudo nmap -p"$open_ports_list" -sS -sV -sC -T"$T_option" -v --min-rate "$min_rate" --traceroute "$ip_address" ${A_option:+-A} 2>/dev/null)
