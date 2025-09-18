@@ -2,14 +2,14 @@
 
 # Colors :D
 RESET='\033[0m'       # Reset text style to default
-BOLD_GREEN='\033[1;32m'   # Bold Green
-BOLD_CYAN='\033[1;36m'    # Bold Cyan
-BOLD_RED='\033[1;31m'     # Bold Red
-BOLD_MAGENTA='\033[1;35m' # Bold Magenta
+BOLD_GREEN='\033[1;32m'    # Bold Green
+BOLD_CYAN='\033[1;36m'     # Bold Cyan
+BOLD_RED='\033[1;31m'      # Bold Red
+BOLD_MAGENTA='\033[1;35m'  # Bold Magenta
 
 # Function to display script usage
 usage() {
-    echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} Usage: $0 -a <ip_address> [-s <min_rate>] [-A]" >&2
+    echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Usage: $0 -a <ip_address> [-s <min_rate>] [-A]" >&2
     exit 1
 }
 
@@ -55,12 +55,12 @@ while getopts ":a:s:AT12345" opt; do
             T_option=5
             ;;
         \?)
-            echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_RED}Warning${RESET}${BOLD_MAGENTA}>${RESET} Invalid option: -$OPTARG" >&2
+            echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_RED}Warning${RESET}${BOLD_MAGENTA}]${RESET} Invalid option: -$OPTARG" >&2
             usage
             ;;
         :)
             if [ "$OPTARG" = "a" ] || [ "$OPTARG" = "s" ]; then
-                echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_RED}Warning${RESET}${BOLD_MAGENTA}>${RESET} Option -$OPTARG requires an argument." >&2
+                echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_RED}Warning${RESET}${BOLD_MAGENTA}]${RESET} Option -$OPTARG requires an argument." >&2
                 usage
             fi
             ;;
@@ -68,7 +68,7 @@ while getopts ":a:s:AT12345" opt; do
 done
 
 #Quality
-echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} Probing Ports"
+echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Probing Ports"
 echo ""
 
 # Run nmap command and use a process substitution to parse output in real-time (Getting ports)
@@ -79,7 +79,7 @@ while read -r line; do
         # Add the port to the array if it's not already present
         if [[ ! " ${open_ports[@]} " =~ " $port " ]]; then
             open_ports+=("$port")
-            echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} Open port: $port"
+            echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Open port: $port"
         fi
     fi
 done < <(sudo nmap -p- -T"$T_option" -v --min-rate "$min_rate" "$ip_address")
@@ -89,7 +89,7 @@ open_ports_list=$(IFS=,; echo "${open_ports[*]}")
 
 #Quality
 echo ""
-echo -e "${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} Scanning Ports"
+echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Scanning Ports"
 
 # Variable
 below_scan_report=false
@@ -112,14 +112,14 @@ while read -r line; do
 
     if $needToCheck; then
         if [[ $line == *"Initiating Service scan"* ]]; then
-            echo -e " ${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} Started Service Scan"
+            echo -e " ${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Started Service Scan"
         elif [[ $line == *"Service scan Timing: "* ]]; then
             timing_info=$(echo "$line" | sed 's/.*{\(.*\) remaining}.*/\1/')
-            echo -e " ${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} $timing_info"
+            echo -e " ${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} $timing_info"
         elif [[ $line == *"Completed Service scan"* ]]; then
-            echo -e " ${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} Finished Service Scan"
+            echo -e " ${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Finished Service Scan"
         elif [[ $line == *"NSE: Script scanning"* ]]; then
-            echo -e " ${BOLD_MAGENTA}<${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}>${RESET} Started Script Scanning"
+            echo -e " ${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Started Script Scanning"
         fi
     fi
 
