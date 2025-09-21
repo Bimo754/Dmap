@@ -7,9 +7,25 @@ BOLD_CYAN='\033[1;36m'     # Bold Cyan
 BOLD_RED='\033[1;31m'      # Bold Red
 BOLD_MAGENTA='\033[1;35m'  # Bold Magenta
 
+# Set Default Values
+min_rate=500
+T_option=3
+
 # Function to display script usage
 usage() {
-    echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Usage: $0 -a <ip_address> [-s <min_rate>] [-A]" >&2
+    echo ""
+    echo -e "Usage:" >&2
+    echo -e "\tdmap -a <ip> [options]" >&2
+    echo ""
+    echo -e "Options:" >&2
+    echo -e "\t-a <ip>\tTarget IP address to scan" >&2
+    echo -e "\t-s <min_rate>\tMinimum packet rate for scanning (default: ${min_rate})" >&2
+    echo -e "\t-A\t\tEnable OS detection, version detection, script scanning, and traceroute" >&2
+    echo -e "\t-T<0-5>\t\tTiming template for scan speed (default: ${T_option})" >&2
+    echo ""
+    echo -e "Example:" >&2
+    echo -e "\tdmap -a 192.168.1.10" >&2
+    echo -e "\tdmap -a 192.168.1.10 -s 1000 -T4 -A" >&2
     exit 1
 }
 
@@ -19,10 +35,6 @@ if [ $# -lt 2 ]; then
 elif [ $# -gt 6 ]; then
     usage
 fi
-
-# Set Default Values
-min_rate=500
-T_option=3
 
 # Parse command line arguments
 while getopts ":a:s:AT12345" opt; do
@@ -104,7 +116,7 @@ while read -r line; do
         echo ""
         echo -e "\t\t\t\t\t\t\t${BOLD_CYAN}Finished Scan${RESET}"
         echo ""
-        sleep 1.2
+        sleep 0.4
         echo $line
     elif $below_scan_report; then
         echo $line
@@ -123,4 +135,4 @@ while read -r line; do
         fi
     fi
 
-done < <(sudo nmap -p"$open_ports_list" -sS -sV -sC -T"$T_option" -v --min-rate "$min_rate" --traceroute "$ip_address" ${A_option:+-A} 2>/dev/null)
+done < <(sudo nmap -p"$open_ports_list" -sS -sV -sC -T"$T_option" -v --min-rate "$min_rate" "$ip_address" ${A_option:+-A} 2>/dev/null)
