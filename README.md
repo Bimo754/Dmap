@@ -1,23 +1,23 @@
 # 🤔 What is this?
 
 
-Dmap is a port scanning script that was created to discover open TCP ports <ins>with haste</ins>, that utilizes the tool [nmap](https://github.com/nmap/nmap)
+Dmap is a port scanning script designed to quickly discover open TCP ports <ins>with haste</ins>, utilizing the tool [nmap](https://github.com/nmap/nmap)
 
 <br>
 
 # ✨ Features
 
-Dmap is mostly used in HTB and TryHackMe machines, where speed is important to get first blood.
+Dmap is mostly used on HTB and TryHackMe machines, where speed is important to get “first blood.”
 
-Just supply an ip, and let it do the rest ;)
+Simply supply an IP address, and let it do the rest. ;)
 
-It will scan all possible TCP ports and then Version and Script scan them
+It will probe all open TCP ports and then perform version and script scans.
 
 
 # 🛠️ Installation
 
 1. Ensure [nmap](https://github.com/nmap/nmap) is installed on your system.
-2.
+2. Clone the repository and run the installer
 ```sh
 git clone https://github.com/Bimo754/Dmap
 cd Dmap
@@ -58,13 +58,13 @@ Scan 127.0.0.1
 dmap -a 127.0.0.1
 ```
 
-Scan 127.0.0.1 with -A
+Scan 127.0.0.1 with `-A`
 
 ```sh
 dmap -a 127.0.0.1 -A
 ```
 
-Scan 127.0.0.1 with -A and -T5
+Scan 127.0.0.1 with `-A` and `-T5`
 
 ```sh
 dmap -a 127.0.0.1 -A -T5
