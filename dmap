@@ -10,6 +10,8 @@ BOLD_MAGENTA='\033[1;35m'  # Bold Magenta
 # Set Default Values
 min_rate=500
 T_option=3
+udp_top=100
+udp_enabled=false
 
 # Function to display script usage
 usage() {
@@ -22,17 +24,60 @@ usage() {
     echo -e "\t-s <min_rate>\tMinimum packet rate for scanning (default: ${min_rate})" >&2
     echo -e "\t-A\t\tEnable OS detection, version detection, script scanning, and traceroute" >&2
     echo -e "\t-T<0-5>\t\tTiming template for scan speed (default: ${T_option})" >&2
+    echo -e "\t--udp [N]\tEnable UDP-only scan of top N ports (default: ${udp_top}). You can pass --udp or --udp=50 or --udp 200" >&2
     echo ""
     echo -e "Example:" >&2
     echo -e "\tdmap -a 192.168.1.10" >&2
-    echo -e "\tdmap -a 192.168.1.10 -s 1000 -T4 -A" >&2
+    echo -e "\tdmap -a 192.168.1.10 -s 1000 -T4 -A --udp=200" >&2
     exit 1
 }
+
+# Pre-parse for --udp (supports --udp, --udp=NN, or --udp NN)
+# This properly removes the --udp argument from "$@" so getopts won't see it later.
+new_args=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --udp)
+            udp_enabled=true
+            shift
+            # If the next arg is a number, treat it as the top ports value
+            if [[ $# -gt 0 && "$1" =~ ^[0-9]+$ ]]; then
+                udp_top="$1"
+                shift
+            fi
+            ;;
+        --udp=*)
+            udp_enabled=true
+            udp_top="${1#--udp=}"
+            # sanitize
+            if ! [[ "$udp_top" =~ ^[0-9]+$ ]]; then
+                udp_top=100
+            fi
+            shift
+            ;;
+        --)
+            # end-of-options marker: consume it and keep remaining args
+            shift
+            while [[ $# -gt 0 ]]; do
+                new_args+=("$1")
+                shift
+            done
+            break
+            ;;
+        *)
+            new_args+=("$1")
+            shift
+            ;;
+    esac
+done
+# Restore positional parameters so getopts parses only the remaining short options
+set -- "${new_args[@]}"
 
 # Check if there are at least 2 arguments
 if [ $# -lt 2 ]; then
     usage
-elif [ $# -gt 6 ]; then
+elif [ $# -gt 8 ]; then
+    # allow a couple more args because of --udp long form
     usage
 fi
 
@@ -70,7 +115,7 @@ while getopts ":a:s:AT12345" opt; do
             echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_RED}Warning${RESET}${BOLD_MAGENTA}]${RESET} Invalid option: -$OPTARG" >&2
             usage
             ;;
-        :)
+        :) 
             if [ "$OPTARG" = "a" ] || [ "$OPTARG" = "s" ]; then
                 echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_RED}Warning${RESET}${BOLD_MAGENTA}]${RESET} Option -$OPTARG requires an argument." >&2
                 usage
@@ -79,42 +124,86 @@ while getopts ":a:s:AT12345" opt; do
     esac
 done
 
-#Quality
-echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Probing Ports"
-echo ""
+# Initialize open_ports array
+open_ports=()
 
-# Run nmap command and use a process substitution to parse output in real-time (Getting ports)
-while read -r line; do
-    # Parse each line of output to extract discovered open ports
-    if [[ $line =~ ^Discovered\ open\ port\ ([0-9]+)/[a-z]+ ]]; then
-        port=${BASH_REMATCH[1]}
-        # Add the port to the array if it's not already present
-        if [[ ! " ${open_ports[@]} " =~ " $port " ]]; then
-            open_ports+=("$port")
-            echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Open port: $port"
+if $udp_enabled; then
+    # UDP-only mode
+    # echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} UDP-only mode enabled"
+    echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Probing UDP Ports"
+    echo ""
+
+    # Run UDP scan and capture discovered UDP open ports
+    while read -r line; do
+        # Parse UDP discovered open ports
+        if [[ $line =~ ^Discovered\ open\ port\ ([0-9]+)/udp ]]; then
+            port=${BASH_REMATCH[1]}
+            if [[ ! " ${open_ports[@]} " =~ " $port " ]]; then
+                open_ports+=("$port")
+                echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Open UDP port: $port"
+            fi
         fi
-    fi
-done < <(sudo nmap -p- -T"$T_option" -v --min-rate "$min_rate" "$ip_address")
+    done < <(sudo nmap -sU --top-ports "$udp_top" -T"$T_option" -v --min-rate "$min_rate" "$ip_address")
+
+else
+    # Standard TCP mode
+    echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Probing TCP Ports"
+    echo ""
+
+    # Run nmap command and use a process substitution to parse output in real-time (Getting TCP ports)
+    while read -r line; do
+        # Parse each line of output to extract discovered open ports (TCP)
+        if [[ $line =~ ^Discovered\ open\ port\ ([0-9]+)/[a-z]+ ]]; then
+            port=${BASH_REMATCH[1]}
+            # Add the port to the array if it's not already present
+            if [[ ! " ${open_ports[@]} " =~ " $port " ]]; then
+                open_ports+=("$port")
+                echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Open TCP port: $port"
+            fi
+        fi
+    done < <(sudo nmap -p- -T"$T_option" -v --min-rate "$min_rate" "$ip_address")
+fi
+
+# Check if any ports were found
+if [ ${#open_ports[@]} -eq 0 ]; then
+    echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_RED}Warning${RESET}${BOLD_MAGENTA}]${RESET} No open ports discovered"
+    exit 0
+fi
 
 # Construct a comma-separated list of open ports
 open_ports_list=$(IFS=,; echo "${open_ports[*]}")
 
 #Quality
 echo ""
-echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Scanning Ports"
+if $udp_enabled; then
+    echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Scanning UDP Ports"
+else
+    echo -e "${BOLD_MAGENTA}[${RESET}${BOLD_GREEN}Info${RESET}${BOLD_MAGENTA}]${RESET} Scanning TCP Ports"
+fi
 
 # Variable
 below_scan_report=false
 needToCheck=true
 
-# Run nmap command and use a process substitution to parse output in real-time (Script,Version and Tracerout scanning)
-while read -r line; do
+# Build nmap command based on UDP or TCP mode
+if $udp_enabled; then
+    nmap_cmd="sudo nmap -sU -p$open_ports_list -sV -sC -T$T_option -v --min-rate $min_rate $ip_address"
+else
+    nmap_cmd="sudo nmap -p$open_ports_list -sS -sV -sC -T$T_option -v --min-rate $min_rate $ip_address"
+fi
 
+# Add -A option if specified
+if [ "$A_option" = true ]; then
+    nmap_cmd="$nmap_cmd -A"
+fi
+
+# Run nmap command and use a process substitution to parse output in real-time
+while read -r line; do
     if [[ $line =~ ^Nmap\ scan\ report\ for ]]; then
         below_scan_report=true
         needToCheck=false
         echo ""
-        echo -e "\t\t\t\t\t\t\t${BOLD_CYAN}Finished Scan${RESET}"
+        echo -e "\t\t\t\t\t\t\t\t\t\t${BOLD_CYAN}Finished Scan${RESET}"
         echo ""
         sleep 0.4
         echo $line
@@ -135,4 +224,4 @@ while read -r line; do
         fi
     fi
 
-done < <(sudo nmap -p"$open_ports_list" -sS -sV -sC -T"$T_option" -v --min-rate "$min_rate" "$ip_address" ${A_option:+-A} 2>/dev/null)
+done < <(eval "$nmap_cmd" 2>/dev/null)

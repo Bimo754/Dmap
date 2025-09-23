@@ -43,6 +43,7 @@ Options:
 	-s <min_rate>	Minimum packet rate for scanning (default: 500)
 	-A		Enable OS detection, version detection, script scanning, and traceroute
 	-T<0-5>		Timing template for scan speed (default: 3)
+	--udp [N]	Enable UDP-only scan of top N ports (default: 100).
 ```
 
 ## Scan a target
@@ -69,4 +70,10 @@ Scan 127.0.0.1 with `-A` and `-T5`
 
 ```sh
 dmap -a 127.0.0.1 -A -T5
+```
+
+Scan 127.0.0.1 top 200 udp ports
+
+```sh
+dmap -a 127.0.0.1 --udp 200
 ```
