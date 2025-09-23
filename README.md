@@ -2,7 +2,7 @@
 
 ![](/Video/dmap.gif)
 
-Dmap is a port scanning script designed to quickly discover open TCP ports <ins>with haste</ins>, utilizing the tool [nmap](https://github.com/nmap/nmap)
+Dmap is a port scanning script designed to quickly discover open TCP/UDP ports <ins>with haste</ins>, utilizing the tool [nmap](https://github.com/nmap/nmap)
 
 <br>
 
