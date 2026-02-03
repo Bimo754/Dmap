@@ -187,9 +187,9 @@ needToCheck=true
 
 # Build nmap command based on UDP or TCP mode
 if $udp_enabled; then
-    nmap_cmd="sudo nmap -sU -p$open_ports_list -sV -sC -T$T_option -v --min-rate $min_rate $ip_address"
+    nmap_cmd="sudo nmap -sU -p$open_ports_list -sV --version-intensity 9 -sC -T$T_option -v --min-rate $min_rate $ip_address"
 else
-    nmap_cmd="sudo nmap -p$open_ports_list -sS -sV -sC -T$T_option -v --min-rate $min_rate $ip_address"
+    nmap_cmd="sudo nmap -p$open_ports_list -sS -sV --version-intensity 9 -sC -T$T_option -v --min-rate $min_rate $ip_address"
 fi
 
 # Add -A option if specified
